@@ -50,10 +50,15 @@ import kotlinx.android.synthetic.main.layout_player_bottom.*
 import kotlinx.android.synthetic.main.layout_player_controls.*
 import kotlinx.android.synthetic.main.layout_player_rewind_forward.*
 import kotlinx.android.synthetic.main.layout_player_toolbar.*
+import kotlinx.coroutines.*
 import org.joda.time.Duration
 import ru.terrakok.cicerone.Navigator
 import ru.terrakok.cicerone.NavigatorHolder
+import java.lang.Runnable
+import java.net.HttpURLConnection
+import java.net.URL
 import javax.inject.Inject
+import javax.net.ssl.HttpsURLConnection
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -336,15 +341,51 @@ class EmbeddedPlayerActivity : BaseActivity<EmbeddedPlayerPresenter, EmbeddedPla
         val factory = DefaultHttpDataSourceFactory("sap", DefaultBandwidthMeter(), Constants.LONG_TIMEOUT * 1000, Constants.LONG_TIMEOUT * 1000, true)
         factory.defaultRequestProperties.set(headers)
 
+        val videoUrl = handleSibnetRedirect(it.url) ?: it.url
+
         val source = MediaSourceHelper
                 .withFactory(factory)
                 .withFormat(VideoFormat.MP4)
-                .withVideoUrl(it.url)
+                .withVideoUrl(videoUrl)
                 .withSubtitles(subtitles, Format.createTextSampleFormat(null, MimeTypes.TEXT_SSA, Format.NO_VALUE, null))
                 .get()
 
         if (needReset) controller.addMediaSource(source)
         else controller.updateTrack(source)
+    }
+
+    /**
+     * Simple workaround.
+     * Connect to passed [stringUrl] and return new url if redirect found.
+     *
+     * @return
+     * old url if [stringUrl] host not sibnet.ru or if status code [HttpURLConnection.HTTP_OK],
+     * null if status code not [HttpURLConnection.HTTP_MOVED_TEMP],
+     * new url otherwise
+     */
+    @Suppress("UsePropertyAccessSyntax", "UnnecessaryVariable")
+    fun handleSibnetRedirect(stringUrl: String): String? = runBlocking {
+        return@runBlocking withContext(Dispatchers.IO){
+            val url = URL(stringUrl)
+            if (!url.host.contains("sibnet.ru")) return@withContext stringUrl
+
+            val connection: HttpsURLConnection = (url.openConnection() as HttpsURLConnection).apply {
+                setConnectTimeout(10000)
+                setReadTimeout(10000)
+                setInstanceFollowRedirects(false)
+                addRequestProperty("Referer", "https://us-central1-shikimori-fbf37.cloudfunctions.net/")
+                disconnect()
+            }
+
+            val responseCode = connection.responseCode
+
+            if (responseCode == HttpURLConnection.HTTP_OK) return@withContext stringUrl
+            if (responseCode != HttpURLConnection.HTTP_MOVED_TEMP) return@withContext null
+
+            val location = connection.getHeaderField("Location")
+
+            return@withContext location
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
