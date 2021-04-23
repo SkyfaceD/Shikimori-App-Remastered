@@ -16,6 +16,7 @@ import com.gnoemes.shikimori.presentation.view.player.embedded.EmbeddedPlayerVie
 import com.gnoemes.shikimori.presentation.view.player.embedded.provider.EmbeddedPlayerResourceProvider
 import com.gnoemes.shikimori.utils.Utils
 import com.gnoemes.shikimori.utils.appendLoadingLogic
+import com.gnoemes.shikimori.utils.handleTrackUrls
 import javax.inject.Inject
 
 @InjectViewState
@@ -60,7 +61,11 @@ class EmbeddedPlayerPresenter @Inject constructor(
     }
 
     private fun setTrack(video: Video, needReset: Boolean) {
-        val track = video.tracks.getOrNull(currentTrack)
+        //Workaround for extra request
+        val selectedTrack = video.tracks.getOrNull(currentTrack)
+        val track = selectedTrack?.copy(
+                url = handleTrackUrls(video.hosting, selectedTrack.url) ?: selectedTrack.url
+        )
         track?.let {
             viewState.apply {
                 setEpisodeSubtitle(currentEpisode)

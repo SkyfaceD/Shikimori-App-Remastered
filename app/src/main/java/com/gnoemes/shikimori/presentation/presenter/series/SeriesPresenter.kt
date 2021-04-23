@@ -15,9 +15,7 @@ import com.gnoemes.shikimori.presentation.presenter.common.provider.CommonResour
 import com.gnoemes.shikimori.presentation.presenter.common.provider.ShareResourceProvider
 import com.gnoemes.shikimori.presentation.presenter.series.translations.converter.TranslationsViewModelConverter
 import com.gnoemes.shikimori.presentation.view.series.SeriesView
-import com.gnoemes.shikimori.utils.Utils
-import com.gnoemes.shikimori.utils.appendLoadingLogic
-import com.gnoemes.shikimori.utils.clearAndAddAll
+import com.gnoemes.shikimori.utils.*
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -303,6 +301,7 @@ class SeriesPresenter @Inject constructor(
         openVideo(selectedVideo, playerType)
     }
 
+    @Suppress("NAME_SHADOWING")
     fun onHostingClicked(video: TranslationVideo) {
         this.selectedVideo = video
         if (!Utils.isHostingSupports(video.videoHosting)) openVideo(video, PlayerType.WEB)
@@ -315,7 +314,13 @@ class SeriesPresenter @Inject constructor(
     private fun openVideo(payload: TranslationVideo, playerType: PlayerType) {
         if (playerType == PlayerType.EMBEDDED) openPlayer(playerType, EmbeddedPlayerNavigationData(navigationData.name, navigationData.rateId, items.firstOrNull()!!.episodesSize, payload))
         else if (playerType == PlayerType.WEB && payload.webPlayerUrl != null) openPlayer(playerType, payload.webPlayerUrl)
-        else getVideoAndExecute(payload) { selectedPlayer = playerType; showQualityChooser(it.tracks) }
+        else getVideoAndExecute(payload) { video ->
+            selectedPlayer = playerType
+            //Workaround for EXTERNAL player
+            showQualityChooser(video.tracks.map { track ->
+                Track(track.quality, handleTrackUrls(payload.videoHosting, track.url) ?: track.url )
+            })
+        }
     }
 
     private fun showQualityChooser(tracks: List<Track>) {
