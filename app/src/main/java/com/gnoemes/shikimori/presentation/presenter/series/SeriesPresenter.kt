@@ -96,7 +96,7 @@ class SeriesPresenter @Inject constructor(
                     .subscribe(this::setData, this::processErrors)
                     .addToDisposables()
 
-    private fun loadEpisodes() = interactor.getEpisodes(navigationData.animeId, isAlternative)
+    private fun loadEpisodes() = interactor.getEpisodes(navigationData.animeId, navigationData.nameEng, isAlternative)
             .map { it.take(navigationData.episodesAired) }
             .doOnSubscribe { viewState.showEpisodeLoading(true) }
             .doOnSuccess { viewState.showEpisodeLoading(false) }
@@ -104,7 +104,7 @@ class SeriesPresenter @Inject constructor(
             .addToDisposables()
 
     private fun loadTranslations(type: TranslationType, episodeId: Long) = interactor
-            .getTranslations(type, navigationData.animeId, episodeId, isAlternative)
+            .getTranslations(type, navigationData.animeId, episodeId, navigationData.nameEng, isAlternative)
             .doOnSubscribe { viewState.setTranslationType(type) }
             .map { converter.convertTranslations(it, setting) }
 
@@ -163,7 +163,7 @@ class SeriesPresenter @Inject constructor(
         } else viewState.showData(it)
     }
 
-    fun onNextEpisode() = interactor.getEpisodes(navigationData.animeId, isAlternative)
+    fun onNextEpisode() = interactor.getEpisodes(navigationData.animeId, navigationData.nameEng, isAlternative)
             .map { it.take(navigationData.episodesAired) }
             .doOnSubscribe { viewState.showEpisodeLoading(true) }
             .doOnSuccess { viewState.showEpisodeLoading(false) }
@@ -251,7 +251,7 @@ class SeriesPresenter @Inject constructor(
     }
 
     fun showEpisodes() {
-        val data = EpisodesNavigationData(navigationData.animeId, episode!!, rateId, isAlternative)
+        val data = EpisodesNavigationData(navigationData.animeId, navigationData.nameEng, episode!!, rateId, isAlternative)
         viewState.showEpisodesDialog(data)
     }
 
