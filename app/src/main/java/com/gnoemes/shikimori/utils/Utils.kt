@@ -23,13 +23,15 @@ object Utils {
             is VideoHosting.VK,
             is VideoHosting.SIBNET,
             is VideoHosting.MYVI,
-            is VideoHosting.SMOTRET_ANIME -> true
+            is VideoHosting.SMOTRET_ANIME,
+            is VideoHosting.SOVET_ROMANTICA -> true
             else -> false
         }
     }
 
     fun getRequestHeadersForHosting(video: Video?): Map<String, String> = when (video?.hosting) {
         is VideoHosting.SOVET_ROMANTICA, is VideoHosting.UNKNOWN -> mapOf(Pair("Referrer", video.player))
+        is VideoHosting.SIBNET -> mapOf(Pair("Referer", video.player))
         else -> emptyMap()
     }
 
