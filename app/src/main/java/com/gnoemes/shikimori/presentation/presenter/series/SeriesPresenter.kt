@@ -318,7 +318,7 @@ class SeriesPresenter @Inject constructor(
             selectedPlayer = playerType
             //Workaround for EXTERNAL player
             showQualityChooser(video.tracks.map { track ->
-                track.copy(url = handleTrackUrls(payload.videoHosting, track.url) ?: track.url)
+                track.copy(url = handleTrackUrls(payload.videoHosting, track.url, playerType) ?: track.url)
             })
         }
     }
